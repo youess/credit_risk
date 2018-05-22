@@ -10,3 +10,4 @@ sub
 # cache files and dirs.
 .ipynb_checkpoints
 __pycache__
+.DS_Store

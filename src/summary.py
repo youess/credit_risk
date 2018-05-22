@@ -6,7 +6,8 @@
 
 
 import os
-import numpy as np
+# import numpy as np
+import glob
 import pandas as pd
 
 
@@ -14,7 +15,9 @@ def print_data_summary(df, name="data"):
     print(f"[{name}] Summary info shape: {df.shape}")
     for col in df.columns.tolist():
         print(f"--{col}: ")
-        print(f"--NA count[ {df[col].isnull().sum()} ]", end=";")
+        na_counts = df[col].isnull().sum()
+        print(f"--NA count[ {na_counts}, {100*na_counts/df.shape[0]:.2f}% ]",
+              end=";")
         if df[col].dtype == object:
             stat = df[col].value_counts()
             print(f"Category count: {list(zip(stat.index, stat.values))}")
@@ -29,14 +32,17 @@ def print_data_summary(df, name="data"):
 
 
 def main():
-	data_dir = os.path.join(os.path.dirname(__file__), '../data')
-	files = os.listdir(data_dir)
-	files = [os.path.join(data_dir, f) for f in files if 'csv.zip' in f]
+    data_dir = os.path.join(os.path.dirname(__file__), '../data')
+    # files = os.listdir(data_dir)
+    files = glob.glob1(data_dir, '*.csv.zip')
+    files = [f for f in files if 'application_test' not in f]
+    files = [f for f in files if 'sample_submission' not in f]
+    files = [os.path.join(data_dir, f) for f in files]
 
-	for f in files:
-		df = pd.read_csv(f)
-		print_data_summary(df, name=f)
+    for f in files:
+        df = pd.read_csv(f)
+        print_data_summary(df, name=f)
 
 
 if __name__ == '__main__':
-	main()
+    main()

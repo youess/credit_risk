@@ -24,6 +24,9 @@ python train.py --tag base2_try3
 python train.py --tag base2_try4    @REM, lb 0.768
 python train.py --tag base2_try5    @REM, lb 0.764
 
+@REM v4, add pos_balance info and installment-payment info
+python train.py --tag base3
+
 @REM V1, not useful feature list.
 @REM FLAG_DOCUMENT_10, FLAG_DOCUMENT_2,FLAG_MOBIL
 @REM FLAG_DOCUMENT_19,FLAG_DOCUMENT_4,FLAG_DOCUMENT_17

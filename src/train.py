@@ -5,7 +5,7 @@
 # @Last Modified time: 2018-05-22 18:18:18
 
 
-import os
+# import os
 import gc
 import os.path as op
 import numpy as np
@@ -63,8 +63,8 @@ def timer(name):
     print('[{}] done in {:.2f} s'.format(name, time.time() - t0))
 
 
-def add_df_column(df, grp, select, fun=None, new_column=None, 
-    new_dtype='uint16', reverse_order=False):
+def add_df_column(df, grp, select, fun=None, new_column=None,
+                  new_dtype='uint16', reverse_order=False):
     """
     df, a dataframe object,
     grp, a list
@@ -79,18 +79,23 @@ def add_df_column(df, grp, select, fun=None, new_column=None,
     with timer("Counting {}".format(new_column)):
         if fun == 'cumcount':
             if reverse_order:
-                df[new_column] = df[grp + [select]].iloc[::-1, :].groupby(grp)[select].agg(fun).astype(new_dtype) 
+                df[new_column] = df[
+                    grp + [select]].iloc[::-1, :].groupby(
+                        grp)[select].agg(fun).astype(new_dtype)
             else:
-                df[new_column] = df[grp + [select]].groupby(grp)[select].agg(fun).astype(new_dtype) 
-        else: 
+                df[new_column] = df[grp + [select]].groupby(
+                    grp)[select].agg(fun).astype(new_dtype)
+        else:
             df = df.merge(
-                df[grp + [select]].groupby(grp)[select].agg(fun).astype(new_dtype).reset_index(). \
-                    rename(columns={select: new_column}), how='left')
+                df[grp + [select]].groupby(
+                    grp)[select].agg(fun).astype(
+                        new_dtype).reset_index().rename(
+                            columns={select: new_column}), how='left')
     return df
 
 
 def get_group_stat(df, grp, select, fun=None,
-                    new_column=None, new_dtype='uint16'):
+                   new_column=None, new_dtype='uint16'):
 
     if fun is None:
         fun = 'count'
@@ -104,7 +109,8 @@ def get_group_stat(df, grp, select, fun=None,
 
     # not support cumcout
     with timer("Stating {}".format(new_column)):
-        stat_df = df[grp + [select]].groupby(grp)[select].agg(fun).astype(new_dtype).\
+        stat_df = df[grp + [select]].groupby(
+            grp)[select].agg(fun).astype(new_dtype).\
             reset_index().rename(columns={select: new_column})
         return stat_df
 
@@ -116,7 +122,8 @@ def pivot_stat_single(df, index, column, fill_value=None):
     df = df.pivot_table(index=index, columns=column, fill_value=fill_value)
     cols = []
     for idx0, idx1 in zip(df.columns.labels[0], df.columns.labels[1]):
-        col = [df.columns.levels[0][idx0], df.columns.levels[1][idx1].replace(' ', '_')]
+        col = [df.columns.levels[0][idx0],
+               df.columns.levels[1][idx1].replace(' ', '_')]
         cols.append('_'.join(col))
 
     df.columns = cols
@@ -130,7 +137,7 @@ def exclude_column_df(df, exclude_set):
 
 
 def main(**opt):
-    
+
     gc.enable()
 
     # Get the optimized parameters
@@ -157,7 +164,7 @@ def main(**opt):
     ######################################################################
     # part 1. Concate the train and test data to make features together.
     ######################################################################
-    print("Feature not added train data shape: {}".format(train.shape))
+    print("Part-1 Feature not added train data shape: {}".format(train.shape))
     y = train['TARGET']
     train.drop(['TARGET'], axis=1, inplace=True)
     train_size = train.shape[0]
@@ -169,7 +176,8 @@ def main(**opt):
     useless_feat_file = op.join(cur_dir, '../stat/dump_feat.txt')
     useless_feat = load_useless_feat(useless_feat_file)
 
-    train = train[[f_ for f_ in train.columns.tolist() if f_ not in useless_feat]]
+    train = train[[f_ for f_ in train.columns.tolist()
+                   if f_ not in useless_feat]]
 
     #################################
     # part 2. add bureau info.
@@ -178,7 +186,7 @@ def main(**opt):
     # bu tag
     bureau_file = op.join(data_dir, 'bureau.csv.zip')
     bureau = cache_read(bureau_file)
- 
+
     # bub tag
     bureau_balance_file = op.join(data_dir, 'bureau_balance.csv.zip')
     bureau_balance = cache_read(bureau_balance_file)
@@ -198,67 +206,85 @@ def main(**opt):
     del df
 
     # 借贷多少次
-    df = get_group_stat(bureau, ['SK_ID_CURR'], 'SK_ID_BUREAU', 
+    df = get_group_stat(
+        bureau, ['SK_ID_CURR'], 'SK_ID_BUREAU',
         fun='nunique', new_dtype='uint16')
-    df_tmp = get_group_stat(bureau, ['SK_ID_CURR'], 'SK_ID_BUREAU', fun='count')
+    df_tmp = get_group_stat(
+        bureau, ['SK_ID_CURR'], 'SK_ID_BUREAU', fun='count')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
     # 借贷状态
-    df_tmp = get_group_stat(bureau, ['SK_ID_CURR', 'CREDIT_ACTIVE'], 
+    df_tmp = get_group_stat(
+        bureau, ['SK_ID_CURR', 'CREDIT_ACTIVE'],
         'SK_ID_BUREAU', 'nunique')
-    df_tmp = pivot_stat_single(df_tmp, 'SK_ID_CURR', 'CREDIT_ACTIVE', fill_value=0)
+    df_tmp = pivot_stat_single(
+        df_tmp, 'SK_ID_CURR', 'CREDIT_ACTIVE', fill_value=0)
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
     # 借贷币种
-    df_tmp = get_group_stat(bureau, ['SK_ID_CURR'], 'CREDIT_CURRENCY', fun='nunique')
+    df_tmp = get_group_stat(
+        bureau, ['SK_ID_CURR'], 'CREDIT_CURRENCY', fun='nunique')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
-    df_tmp = get_group_stat(bureau, ['SK_ID_CURR', 'CREDIT_CURRENCY'], 'SK_ID_BUREAU', fun='nunique')
-    df_tmp = pivot_stat_single(df_tmp, 'SK_ID_CURR', 'CREDIT_CURRENCY', fill_value=0)
+    df_tmp = get_group_stat(
+        bureau, ['SK_ID_CURR', 'CREDIT_CURRENCY'],
+        'SK_ID_BUREAU', fun='nunique')
+    df_tmp = pivot_stat_single(
+        df_tmp, 'SK_ID_CURR', 'CREDIT_CURRENCY', fill_value=0)
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
     # 平均借贷时间，除了closed的
-    df_tmp = get_group_stat(bureau[bureau['CREDIT_ACTIVE'] != 'Closed'],
+    df_tmp = get_group_stat(
+        bureau[bureau['CREDIT_ACTIVE'] != 'Closed'],
         ['SK_ID_CURR'], 'DAYS_CREDIT', fun='mean', new_dtype='float32')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR']).fillna(0)
-    df_tmp = get_group_stat(bureau[bureau['CREDIT_ACTIVE'] != 'Closed'],
+    df_tmp = get_group_stat(
+        bureau[bureau['CREDIT_ACTIVE'] != 'Closed'],
         ['SK_ID_CURR'], 'DAYS_CREDIT', fun='std', new_dtype='float32')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR']).fillna(0)
     # 最大借贷预期时间
-    df_tmp = get_group_stat(bureau, ['SK_ID_CURR'], 'CREDIT_DAY_OVERDUE', fun='max')
+    df_tmp = get_group_stat(
+        bureau, ['SK_ID_CURR'], 'CREDIT_DAY_OVERDUE', fun='max')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
     # 从申请这次借贷之后获得CB信用信息的天数, only for closed credit
-    cols = ['DAYS_CREDIT_ENDDATE', 'DAYS_ENDDATE_FACT', 
+    cols = ['DAYS_CREDIT_ENDDATE', 'DAYS_ENDDATE_FACT',
             'AMT_CREDIT_SUM', 'AMT_CREDIT_SUM_DEBT', 'AMT_CREDIT_SUM_LIMIT',
             'AMT_CREDIT_SUM_OVERDUE', 'DAYS_CREDIT_UPDATE',
             'AMT_ANNUITY', 'MONTHS_BALANCE']
     for c in cols:
-        df_tmp = get_group_stat(bureau[['SK_ID_CURR', c]].dropna(),
+        df_tmp = get_group_stat(
+            bureau[['SK_ID_CURR', c]].dropna(),
             ['SK_ID_CURR'], c, fun='mean', new_dtype='float32')
-        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])     # fill nan after
-        df_tmp = get_group_stat(bureau[['SK_ID_CURR', c]].dropna(),
+        df = df.merge(
+            df_tmp, how='left', on=['SK_ID_CURR'])     # fill nan after
+        df_tmp = get_group_stat(
+            bureau[['SK_ID_CURR', c]].dropna(),
             ['SK_ID_CURR'], c, fun='std', new_dtype='float32')
-        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])     # fill nan after
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
     # AMT_CREDIT_MAX_OVERDUE
     c = 'AMT_CREDIT_MAX_OVERDUE'
-    df_tmp = get_group_stat(bureau[['SK_ID_CURR', c]].dropna(),
+    df_tmp = get_group_stat(
+        bureau[['SK_ID_CURR', c]].dropna(),
         ['SK_ID_CURR'], c, fun='max', new_dtype='float32')
     df_tmp.iloc[:, 1] = df_tmp.iloc[:, 1].apply(np.log1p)
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
     # CNT_CREDIT_PROLONG
     c = 'CNT_CREDIT_PROLONG'
-    df_tmp = get_group_stat(bureau[['SK_ID_CURR', c]].dropna(),
+    df_tmp = get_group_stat(
+        bureau[['SK_ID_CURR', c]].dropna(),
         ['SK_ID_CURR'], c, fun='max')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
-    # 
+    #
     c = 'CREDIT_TYPE'
-    df_tmp = get_group_stat(bureau, ['SK_ID_CURR', c], 'SK_ID_BUREAU', fun='nunique')
+    df_tmp = get_group_stat(
+        bureau, ['SK_ID_CURR', c], 'SK_ID_BUREAU', fun='nunique')
     df_tmp = pivot_stat_single(df_tmp, 'SK_ID_CURR', c, fill_value=0)
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
     cols = ['0', '1', '2', '3', '4', '5', 'C', 'X']
     for c in cols:
-        df_tmp = get_group_stat(bureau[['SK_ID_CURR', c]].dropna(), ['SK_ID_CURR'], c, fun='sum')
+        df_tmp = get_group_stat(
+            bureau[['SK_ID_CURR', c]].dropna(), ['SK_ID_CURR'], c, fun='sum')
         df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
     del df_tmp
 
@@ -269,43 +295,52 @@ def main(**opt):
     # exlude not used columns
     train = exclude_column_df(train, useless_feat)
 
-    # part 3. add credit_card_balance, pos_cash_balance, and installments_payments info.
+    ##############################################
+    # part 3. add credit_card_balance,
+    ##############################################
     print("Part-3 credit card balance info adding ...")
     # ccb tag
     credit_card_balance_file = op.join(data_dir, 'credit_card_balance.csv.zip')
     credit_card_balance = cache_read(credit_card_balance_file)
-    
+
     # 过去申请的贷款次数
     c = 'SK_ID_PREV'
     df = get_group_stat(credit_card_balance, ['SK_ID_CURR'], c, fun='nunique')
-    df_tmp = get_group_stat(credit_card_balance, ['SK_ID_CURR'], c, fun='count')
+    df_tmp = get_group_stat(
+        credit_card_balance, ['SK_ID_CURR'], c, fun='count')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
     # 其他指标的均值和标准差
-    cols = ['MONTHS_BALANCE', 'AMT_BALANCE', 'AMT_CREDIT_LIMIT_ACTUAL', 
+    cols = ['MONTHS_BALANCE', 'AMT_BALANCE', 'AMT_CREDIT_LIMIT_ACTUAL',
             'AMT_CREDIT_LIMIT_ACTUAL', 'AMT_DRAWINGS_ATM_CURRENT',
             'AMT_DRAWINGS_CURRENT', 'AMT_DRAWINGS_OTHER_CURRENT',
             'AMT_DRAWINGS_POS_CURRENT', 'AMT_INST_MIN_REGULARITY',
             'AMT_PAYMENT_CURRENT', 'AMT_PAYMENT_TOTAL_CURRENT',
-            'AMT_RECEIVABLE_PRINCIPAL', 'AMT_RECIVABLE', 'AMT_TOTAL_RECEIVABLE',
+            'AMT_RECEIVABLE_PRINCIPAL', 'AMT_RECIVABLE',
+            'AMT_TOTAL_RECEIVABLE',
             'CNT_DRAWINGS_ATM_CURRENT', 'CNT_DRAWINGS_CURRENT',
             'CNT_DRAWINGS_OTHER_CURRENT', 'CNT_DRAWINGS_POS_CURRENT',
             'CNT_INSTALMENT_MATURE_CUM', 'SK_DPD',
             'SK_DPD_DEF']
     for c in cols:
-        df_tmp = get_group_stat(credit_card_balance[['SK_ID_CURR', c]].dropna(), 
+        df_tmp = get_group_stat(
+            credit_card_balance[['SK_ID_CURR', c]].dropna(),
             ['SK_ID_CURR'], c, fun='mean', new_dtype='float32')
         df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
-        df_tmp = get_group_stat(credit_card_balance[['SK_ID_CURR', c]].dropna(),
+        df_tmp = get_group_stat(
+            credit_card_balance[['SK_ID_CURR', c]].dropna(),
             ['SK_ID_CURR'], c, fun='std', new_dtype='float32')
-        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])     # fill nan after
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
     del df_tmp
 
-    # 
+    #
     c = 'NAME_CONTRACT_STATUS'
-    df_tmp = get_group_stat(credit_card_balance, ['SK_ID_CURR', c], 'SK_ID_PREV', fun='count')
-    df_tmp1 = get_group_stat(df_tmp, ['SK_ID_CURR'], df_tmp.columns.tolist()[-1], 'max')
-    df_tmp2 = get_group_stat(df_tmp, ['SK_ID_CURR'], df_tmp.columns.tolist()[-1], 'min')
+    df_tmp = get_group_stat(
+        credit_card_balance, ['SK_ID_CURR', c], 'SK_ID_PREV', fun='count')
+    df_tmp1 = get_group_stat(
+        df_tmp, ['SK_ID_CURR'], df_tmp.columns.tolist()[-1], 'max')
+    df_tmp2 = get_group_stat(
+        df_tmp, ['SK_ID_CURR'], df_tmp.columns.tolist()[-1], 'min')
     df = df.merge(df_tmp1, how='left', on=['SK_ID_CURR'])
     df = df.merge(df_tmp2, how='left', on=['SK_ID_CURR'])
     del df_tmp1, df_tmp2, df_tmp
@@ -317,30 +352,129 @@ def main(**opt):
     # exlude not used columns
     train = exclude_column_df(train, useless_feat)
 
-    # # itp tag
-    # installments_payments_file = op.join(data_dir, 'installments_payments.csv.zip')
-    # installments_payments = cache_read(installments_payments_file)
+    ###############################################
+    # part 4 - itp tag
+    ###############################################
+    print("Part-4 installments_payments info adding ...")
+    installments_payments_file = op.join(
+        data_dir, 'installments_payments.csv.zip')
+    installments_payments = cache_read(installments_payments_file)
 
-    # c = 'SK_ID_PREV'
-    # df = get_group_stat(installments_payments, ['SK_ID_CURR'], c, fun='nunique')
-    # df_tmp = get_group_stat(installments_payments, ['SK_ID_CURR'], c, fun='count')
-    # df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+    c = 'SK_ID_PREV'
+    df = get_group_stat(installments_payments, ['SK_ID_CURR'],
+                        c, fun='nunique')
+    df_tmp = get_group_stat(installments_payments,
+                            ['SK_ID_CURR'], c, fun='count')
+    df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
-    # # 对列名添加标签
-    # df = add_columns_tag(df, 'itp_', keep=['SK_ID_CURR'])
-    # train = pd.merge(train, df, how='left', on=['SK_ID_CURR'])
-    # del df, installments_payments
-    # # exlude not used columns
-    # train = exclude_column_df(train, useless_feat)
+    # 还款方式更改次数
+    c = 'NUM_INSTALMENT_VERSION'
+    df_tmp = get_group_stat(
+        installments_payments, ['SK_ID_CURR'],
+        c, fun='nunique')
+    df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+    
+    # 最大和最小分期次数
+    c = 'NUM_INSTALMENT_NUMBER'
+    df_tmp = get_group_stat(
+        installments_payments, ['SK_ID_CURR', 'SK_ID_PREV'],
+        c, fun='max')
+    c = df_tmp.columns.tolist()[-1]
+    df_tmp1 = get_group_stat(df_tmp, ['SK_ID_CURR'], c, 'min')
+    df = df.merge(df_tmp1, how='left', on=['SK_ID_CURR'])
+    df_tmp2 = get_group_stat(df_tmp, ['SK_ID_CURR'], c, 'max')
+    df = df.merge(df_tmp2, how='left', on=['SK_ID_CURR'])
+    del df_tmp1, df_tmp2, df_tmp
 
-    # # pcb tag
-    # pos_cash_balance_file = op.join(data_dir, 'POS_CASH_balance.csv.zip')
-    # pos_cash_balance = cache_read(pos_cash_balance_file)
+    # 借款和还款时间，相对天数
+    cols = ['DAYS_INSTALMENT', 'DAYS_ENTRY_PAYMENT']
+    installments_payments['DAYS_DIFF'] = installments_payments[cols[0]] - installments_payments[cols[1]]
+    cols += ['DAYS_DIFF']
+    for c in cols:
+        df_tmp = get_group_stat(
+            installments_payments[['SK_ID_CURR', c]].dropna(), 
+            ['SK_ID_CURR'], c, fun='mean', new_dtype='float32')
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+        df_tmp = get_group_stat(
+            installments_payments[['SK_ID_CURR', c]].dropna(), 
+            ['SK_ID_CURR'], c, fun='std', new_dtype='float32')
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
-    # part 4. add previous application info. Most only contains 1 application.
+    # 借还款金额
+    cols = ['AMT_INSTALMENT', 'AMT_PAYMENT']
+    installments_payments['AMT_DIFF'] = installments_payments[cols[0]] - installments_payments[cols[1]]
+    cols += ['AMT_DIFF']
+    for c in cols:
+        df_tmp = get_group_stat(
+            installments_payments[['SK_ID_CURR', c]].dropna(), 
+            ['SK_ID_CURR'], c, fun='mean', new_dtype='float32')
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+        df_tmp = get_group_stat(
+            installments_payments[['SK_ID_CURR', c]].dropna(), 
+            ['SK_ID_CURR'], c, fun='std', new_dtype='float32')
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+
+    # 对列名添加标签
+    df = add_columns_tag(df, 'itp_', keep=['SK_ID_CURR'])
+    train = pd.merge(train, df, how='left', on=['SK_ID_CURR'])
+    del df, installments_payments
+    # exlude not used columns
+    train = exclude_column_df(train, useless_feat)
+
+    ###############################################
+    # Part 5 - pcb tag
+    ###############################################
+    print("Part-5 POS_CASH_balance info adding ...")
+    pos_cash_balance_file = op.join(data_dir, 'POS_CASH_balance.csv.zip')
+    pos_cash_balance = cache_read(pos_cash_balance_file)
+
+    df = pos_cash_balance[['SK_ID_CURR']].drop_duplicates()
+
+    def add_df_stat_single(df, data, grp, sel, fun, new_dtype='uint16'):
+        df_tmp = get_group_stat(data, grp, sel, fun=fun, new_dtype=new_dtype)
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+        return df
+
+    # MONTH balance
+    cols = ['MONTHS_BALANCE', 'CNT_INSTALMENT', 
+        'CNT_INSTALMENT_FUTURE', 'SK_DPD', 'SK_DPD_DEF']
+    for c in cols:
+        df = add_df_stat_single(
+            df, pos_cash_balance[['SK_ID_CURR', c]].dropna(),
+            ['SK_ID_CURR'], c, fun='mean', new_dtype='float32')
+        df = add_df_stat_single(
+            df, pos_cash_balance[['SK_ID_CURR', c]].dropna(), 
+            ['SK_ID_CURR'], c, fun='std', new_dtype='float32')
+
+    cols = ['SK_DPD', 'SK_DPD_DEF']
+    for c in cols:
+        df = add_df_stat_single(
+            df, pos_cash_balance,
+            ['SK_ID_CURR'], c, fun='max')
+
+    # name contract status
+    c = 'NAME_CONTRACT_STATUS'
+    df_tmp = get_group_stat(
+        pos_cash_balance, ['SK_ID_CURR', c], 
+        'SK_ID_PREV', fun='nunique')
+    df_tmp = pivot_stat_single(df_tmp, 'SK_ID_CURR', c, fill_value=0)
+    df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
+
+
+    # 对列名添加标签
+    df = add_columns_tag(df, 'pcb_', keep=['SK_ID_CURR'])
+    train = pd.merge(train, df, how='left', on=['SK_ID_CURR'])
+    del df, pos_cash_balance
+    # exlude not used columns
+    train = exclude_column_df(train, useless_feat)
+
+    ###############################################
+    # part 6. add previous application info. Most only contains 1 application.
+    ###############################################
     # pa tag
-    print("Part-4, previous app info adding ...")
-    previous_application_file = op.join(data_dir, 'previous_application.csv.zip')
+    print("Part-6, previous app info adding ...")
+    previous_application_file = op.join(
+        data_dir, 'previous_application.csv.zip')
     previous_app = cache_read(previous_application_file)
 
     df = get_group_stat(previous_app, ['SK_ID_CURR'], 'SK_ID_PREV', 'count')
@@ -350,29 +484,35 @@ def main(**opt):
         x = sorted(x)
         return ','.join(x)
 
-    df_tmp = get_group_stat(previous_app, ['SK_ID_CURR'], 
-        'NAME_CONTRACT_TYPE', concate_str, new_dtype='object')
+    df_tmp = get_group_stat(
+        previous_app, ['SK_ID_CURR'], 'NAME_CONTRACT_TYPE',
+        concate_str, new_dtype='object')
     df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
 
     cols = ['AMT_ANNUITY', 'AMT_APPLICATION', 'AMT_CREDIT', 'AMT_DOWN_PAYMENT',
-            'AMT_GOODS_PRICE', 'HOUR_APPR_PROCESS_START', 'NFLAG_LAST_APPL_IN_DAY', 
-            'RATE_DOWN_PAYMENT', 'RATE_INTEREST_PRIMARY', 'RATE_INTEREST_PRIVILEGED',
-            'DAYS_DECISION', 'SELLERPLACE_AREA', 'CNT_PAYMENT', 'DAYS_FIRST_DRAWING',
-            'DAYS_FIRST_DUE', 'DAYS_LAST_DUE_1ST_VERSION', 'DAYS_LAST_DUE', 
+            'AMT_GOODS_PRICE', 'HOUR_APPR_PROCESS_START',
+            'NFLAG_LAST_APPL_IN_DAY', 'RATE_DOWN_PAYMENT',
+            'RATE_INTEREST_PRIMARY', 'RATE_INTEREST_PRIVILEGED',
+            'DAYS_DECISION', 'SELLERPLACE_AREA',
+            'CNT_PAYMENT', 'DAYS_FIRST_DRAWING',
+            'DAYS_FIRST_DUE', 'DAYS_LAST_DUE_1ST_VERSION', 'DAYS_LAST_DUE',
             'DAYS_TERMINATION', 'NFLAG_INSURED_ON_APPROVAL']
     for c in cols:
-        df_tmp = get_group_stat(previous_app[['SK_ID_CURR', c]].dropna(), 
-            ['SK_ID_CURR'], c, fun='mean', new_dtype='float32')
+        df_tmp = get_group_stat(
+            previous_app[['SK_ID_CURR', c]].dropna(), ['SK_ID_CURR'],
+            c, fun='mean', new_dtype='float32')
         df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
-        df_tmp = get_group_stat(previous_app[['SK_ID_CURR', c]].dropna(),
-            ['SK_ID_CURR'], c, fun='std', new_dtype='float32')
-        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])     # fill nan after
+        df_tmp = get_group_stat(
+            previous_app[['SK_ID_CURR', c]].dropna(), ['SK_ID_CURR'],
+            c, fun='std', new_dtype='float32')
+        df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])  # fill nan after
 
-    obj_cols = [f for f in previous_app.columns.tolist() 
-        if previous_app[f].dtype == 'object']
+    obj_cols = [f for f in previous_app.columns.tolist()
+                if previous_app[f].dtype == 'object']
     for c in obj_cols:
         previous_app[c] = previous_app[c].fillna('XNA')
-        df_tmp = get_group_stat(previous_app, ['SK_ID_CURR', c], 
+        df_tmp = get_group_stat(
+            previous_app, ['SK_ID_CURR', c],
             'SK_ID_PREV', fun='nunique')
         df_tmp = pivot_stat_single(df_tmp, 'SK_ID_CURR', c, fill_value=0)
         df = df.merge(df_tmp, how='left', on=['SK_ID_CURR'])
@@ -390,7 +530,10 @@ def main(**opt):
             train[f_] = train[f_].fillna('XNA')
             # train[f_] = train[f_].astype('category')
         else:
-            train[f_] = train[f_].fillna(-99999)
+            if 'DAYS' in f_:
+                train[f_] = train[f_].fillna(365243)   # inidicate infinity
+            else:
+                train[f_] = train[f_].fillna(-99999)   # denote na value
 
     # category the variable after filled na value
     for f_ in train.columns.tolist():
@@ -431,13 +574,14 @@ def main(**opt):
         feat_imp.iloc[:, k] = clf.get_feat_imp()
 
     total_auc = roc_auc_score(y, train_pred)
-    print("CV-{} had been done! Total train auc is: {:.4f}".format(n_folds, total_auc))
+    print("CV-{} had been done! Total train auc is: {:.4f}".format(
+        n_folds, total_auc))
 
     feat_imp['imp_mean'] = feat_imp.iloc[:, :n_folds].mean(axis=1)
     feat_imp['imp_std'] = feat_imp.iloc[:, :n_folds].std(axis=1)
     feat_imp['imp_cv'] = feat_imp['imp_std'] / feat_imp['imp_mean']
-    feat_imp = feat_imp.iloc[:, n_folds:].sort_values('imp_cv', 
-        ascending=True, na_position='last')
+    feat_imp = feat_imp.iloc[:, n_folds:].sort_values(
+        'imp_cv', ascending=True, na_position='last')
     ind1 = feat_imp['imp_cv'].isnull()
     ind2 = feat_imp['imp_cv'] > 0.5
     ind3 = feat_imp['imp_mean'] < 10
@@ -462,6 +606,7 @@ def main(**opt):
     subm.to_csv(subm_file, index=False, compression='gzip')
 
     print("All prediction done!")
+
 
 if __name__ == '__main__':
     fire.Fire(main)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: denglei
 # @Date:   2018-05-21 16:36:51
-# @Last Modified by:   denglei
-# @Last Modified time: 2018-05-21 18:05:32
+# @Last Modified by:   denis
+# @Last Modified time: 2018-05-22 17:58:26
 
 
 import os
@@ -18,9 +18,9 @@ class GBMClassifier(BaseClassifier):
 		self.clf_name = 'GBMClassifier'
 		self.clf = LGBMClassifier(
 			n_estimators       = opt.get('n_estimators', 1000),
-			learning_rate      = opt.get('lr_rate', 0.05),
-			num_leaves         = opt.get('num_leaves', 31),
-			max_depth          = opt.get('max_depth', 6),
+			learning_rate      = opt.get('lr_rate', 0.2),
+			num_leaves         = opt.get('num_leaves', 63),
+			max_depth          = opt.get('max_depth', 7),
 			colsample_bytree   = opt.get('cols_frac', 0.7),
 			subsample          = opt.get('rows_frac', 0.7),
 			reg_alpha          = opt.get('reg_alpha', 0.1),
@@ -30,7 +30,7 @@ class GBMClassifier(BaseClassifier):
 			random_state       = opt.get('random_state', 18520),
 			n_jobs             = opt.get('n_jobs', 2),
 		)
-		self.es_stop_num = opt.get('early_stopping_round', 100)
+		self.es_stop_num = opt.get('early_stopping_round', 20)
 
 	def fit(self, train_set, valid_set=None):
 		"""

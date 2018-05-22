@@ -1,9 +1,12 @@
 
 
 
+# data directories.
 data
 models_dump
-stat
+stat/*.csv
 sub
+
+# cache files and dirs.
 .ipynb_checkpoints
 __pycache__

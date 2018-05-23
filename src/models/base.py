@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # @Author: denglei
 # @Date:   2018-05-21 16:36:21
-# @Last Modified by:   denglei
-# @Last Modified time: 2018-05-21 16:59:03
+# @Last Modified by:   denis
+# @Last Modified time: 2018-05-23 14:11:19
+
+
+from datetime import datetime
 
 
 class BaseClassifier(object):
@@ -23,3 +26,10 @@ class BaseClassifier(object):
 
 	def save_model(self):
 		pass
+
+	def get_model_name(self, prefix=None):
+		tmt = datetime.now().strftime('%Y%m%d_%H%M')
+		name = self.clf_name + '_' +tmt + '.txt'
+		if prefix is not None:
+			name = prefix + name
+		return name

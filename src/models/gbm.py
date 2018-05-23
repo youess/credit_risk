@@ -2,12 +2,11 @@
 # @Author: denglei
 # @Date:   2018-05-21 16:36:51
 # @Last Modified by:   denis
-# @Last Modified time: 2018-05-23 09:28:26
+# @Last Modified time: 2018-05-23 15:16:27
 
 
 import os
 from . import BaseClassifier
-from datetime import datetime
 from lightgbm import LGBMClassifier
 
 
@@ -27,6 +26,8 @@ class GBMClassifier(BaseClassifier):
 			reg_lambda         = opt.get('reg_lambda', 0.1),
 			min_split_gain     = opt.get('min_split_gain', 0.01),
 			min_child_weight   = opt.get('min_child_weight', 2),
+			max_bin            = opt.get('max_bin', 255),
+			scale_pos_weight   = opt.get('scale_pos_weight', 1),    # model that not added before good_v3_p2
 			random_state       = opt.get('random_state', 18520),
 			n_jobs             = opt.get('n_jobs', 2),
 			data_random_seed      = 1000,
@@ -66,10 +67,7 @@ class GBMClassifier(BaseClassifier):
 		输出模型到文件中
 		"""
 		if name is None:
-			name = 'lightgbm_model_{}.txt'.format(datetime.now().strftime('%Y%m%d_%H%M'))
-
-		if prefix:
-			name = prefix + name
+			name = self.get_model_name(prefix)
 
 		name = os.path.join(model_dir, name)
 

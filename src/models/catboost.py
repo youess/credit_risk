@@ -11,11 +11,12 @@ from . import BaseClassifier
 
 class CBClassifier(BaseClassifier):
 
-	def __init__(self, opt):
+	def __init__(self, opt, cat_features=None):
 		super().__init__(opt)
 		self.clf_name = 'CBClassifier'
+		self.cat_features = cat_features
 		self.es_stop_num = opt.get('early_stopping_round', 45)
-		self.clf = xgb.CatBoostClassifier(
+		self.clf = CatBoostClassifier(
 			iterations           = opt.get('iterations', 1000),
 			learning_rate        = opt.get('learning_rate', 0.1),
 			depth                = opt.get('depth', 7),
@@ -35,6 +36,7 @@ class CBClassifier(BaseClassifier):
 	def fit(self, train_set, valid_set=None):
 		self.clf.fit(train_set[0], train_set[1],
 			eval_set=valid_set,
+			cat_features=self.cat_features,
 			use_best_model=True)
 
 	def predict_proba(self, x):

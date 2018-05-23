@@ -69,3 +69,7 @@ python train.py --tag xgb_v1 --model XGB_Classifier ^
 	--learning_rate        0.01 ^
 	--min_child_weight     10 ^
 	--early_stopping_round 100
+
+
+python train.py --model CBClassifier --tag cb_v1 
+python train.py --model CBClassifier --tag cb_v2

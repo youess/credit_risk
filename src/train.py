@@ -540,8 +540,11 @@ def create_features(data_dir, useless_feat):
 
     obj_cols = [f for f in previous_app.columns.tolist()
                 if previous_app[f].dtype == 'object']
+    cols_xap = ['CODE_REJECT_REASON', 'NAME_CASH_LOAN_PURPOSE']
     for c in obj_cols:
         previous_app[c] = previous_app[c].fillna('XNA')
+        if c in cols_xap:
+        	previous_app[c].replace({'XAP': 'XNA'}, inplace=True)
         df_tmp = get_group_stat(
             previous_app, ['SK_ID_CURR', c],
             'SK_ID_PREV', fun='nunique')
@@ -588,25 +591,27 @@ def main(**opt):
     gc.enable()
     np.random.seed(123)
 
+    # data directory
+    cur_dir = op.dirname(__file__)
+    data_dir = op.join(cur_dir, '../data')
+
     # Get the optimized parameters
     n_folds = opt.pop('n_folds', 5)
     tag = opt.pop('tag', '')
     tmt = datetime.now().strftime('%Y%m%d_%H%M')
     tag += '_' + tmt + '_'
+    useless_feat_file = opt.pop('useless_feat_file', op.join(data_dir, '../stat/dump_feat.txt'))
     clf_name = opt.get('model', 'GBMClassifier')
     tag += clf_name + '_'
     clf = getattr(models, clf_name)(opt)
     assert clf is not None
 
-    # data directory
-    cur_dir = op.dirname(__file__)
-    data_dir = op.join(cur_dir, '../data')
+    # 指定train和test数据缓存文件位置
     train_cache_file = op.join(data_dir, 'train_feat_cache.feather')
     test_cache_file = op.join(data_dir, 'test_feat_cache.feather')
 
-    useless_feat_file = op.join(data_dir, '../stat/dump_feat.txt')
+    # load useless feat file that contains features not used to train the model
     useless_feat = load_useless_feat(useless_feat_file)
-    # print(useless_feat)
 
     if op.exists(train_cache_file) and op.exists(test_cache_file):
         print("Loading train and test feathers cache file ...")
@@ -639,6 +644,11 @@ def main(**opt):
         train = data.iloc[:train_size, :].reset_index(drop=True)
         del data
         print("Encoding done!")
+    elif clf_name == "CBClassifier":
+    	print("Re-initialize the models ... ")
+    	cat_features = [idx for idx, c in enumerate(train.columns.tolist()[1:]) if train[c].dtype.name == 'category']
+    	clf = getattr(models, clf_name)(opt, cat_features)
+    	assert clf is not None
 
     # may do some tweak using feature importance
     feat_selected = train.columns.tolist()[1:]

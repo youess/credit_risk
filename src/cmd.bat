@@ -1,7 +1,7 @@
 @REM @Author: denglei
 @REM @Date:   2018-05-21 18:09:03
 @REM @Last Modified by:   denis
-@REM Modified time: 2018-05-22 18:45:15
+@REM Modified time: 2018-05-23 09:41:41
 
 
 
@@ -26,8 +26,5 @@ python train.py --tag base2_try5    @REM, lb 0.764
 
 @REM v4, add pos_balance info and installment-payment info
 python train.py --tag base3
+python train.py --tag base3_try1    @REM, lb 0.781 after adjust a few model parameters, mainly learning rate as 0.07
 
-@REM V1, not useful feature list.
-@REM FLAG_DOCUMENT_10, FLAG_DOCUMENT_2,FLAG_MOBIL
-@REM FLAG_DOCUMENT_19,FLAG_DOCUMENT_4,FLAG_DOCUMENT_17
-@REM FLAG_DOCUMENT_7,FLAG_DOCUMENT_12

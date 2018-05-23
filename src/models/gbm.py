@@ -2,7 +2,7 @@
 # @Author: denglei
 # @Date:   2018-05-21 16:36:51
 # @Last Modified by:   denis
-# @Last Modified time: 2018-05-22 17:58:26
+# @Last Modified time: 2018-05-23 09:28:26
 
 
 import os
@@ -18,7 +18,7 @@ class GBMClassifier(BaseClassifier):
 		self.clf_name = 'GBMClassifier'
 		self.clf = LGBMClassifier(
 			n_estimators       = opt.get('n_estimators', 1000),
-			learning_rate      = opt.get('lr_rate', 0.2),
+			learning_rate      = opt.get('lr_rate', 0.07),
 			num_leaves         = opt.get('num_leaves', 63),
 			max_depth          = opt.get('max_depth', 7),
 			colsample_bytree   = opt.get('cols_frac', 0.7),
@@ -29,6 +29,9 @@ class GBMClassifier(BaseClassifier):
 			min_child_weight   = opt.get('min_child_weight', 2),
 			random_state       = opt.get('random_state', 18520),
 			n_jobs             = opt.get('n_jobs', 2),
+			data_random_seed      = 1000,
+			feature_fraction_seed = 1001,
+			bagging_seed          = 1002
 		)
 		self.es_stop_num = opt.get('early_stopping_round', 20)
 

@@ -2,7 +2,7 @@
 # @Author: denglei
 # @Date:   2018-05-21 09:39:03
 # @Last Modified by:   denis
-# @Last Modified time: 2018-05-22 18:18:18
+# @Last Modified time: 2018-05-23 09:26:48
 
 
 # import os
@@ -138,7 +138,9 @@ def exclude_column_df(df, exclude_set):
 
 def main(**opt):
 
+    # 准备工作
     gc.enable()
+    np.random.seed(123)
 
     # Get the optimized parameters
     n_folds = opt.pop('n_folds', 5)
@@ -596,7 +598,7 @@ def main(**opt):
     feat_imp.to_csv(feat_imp_file, index=False)
 
     train_pred_ = train[['SK_ID_CURR']]
-    train_pred_['TARGET_PRED'] = pd.Series(train_pred)
+    train_pred_.loc[:, 'TARGET_PRED'] = train_pred
     train_pred_file = op.join(stat_dir, tag + 'train_cv_pred.csv')
     train_pred_.to_csv(train_pred_file, index=False)
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: denglei
 # @Date:   2018-05-20 16:55:24
-# @Last Modified by:   denglei
-# @Last Modified time: 2018-05-20 17:00:32
+# @Last Modified by:   denis
+# @Last Modified time: 2018-05-24 10:28:08
 
 
 import os
@@ -35,11 +35,12 @@ def main():
     data_dir = os.path.join(os.path.dirname(__file__), '../data')
     # files = os.listdir(data_dir)
     files = glob.glob1(data_dir, '*.csv.zip')
-    files = [f for f in files if 'application_test' not in f]
-    files = [f for f in files if 'sample_submission' not in f]
+    #files = [f for f in files if 'application_test' not in f]
+    #files = [f for f in files if 'sample_submission' not in f]
     files = [os.path.join(data_dir, f) for f in files]
 
     for f in files:
+        # print("Processing stat of {}".format(f))
         df = pd.read_csv(f)
         print_data_summary(df, name=f)
 

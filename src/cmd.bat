@@ -1,7 +1,7 @@
 @REM @Author: denglei
 @REM @Date:   2018-05-21 18:09:03
 @REM @Last Modified by:   denis
-@REM Modified time: 2018-05-23 18:04:40
+@REM Modified time: 2018-05-24 13:41:00
 
 
 
@@ -57,7 +57,7 @@ python train.py --tag      good_v3_p2 ^
 	--n_estimators         5000 ^
 	--lr_rate              0.01 ^
 	--early_stopping_round 300 ^
-	--min_child_weight     10            @REM
+	--min_child_weight     10            @REM lb=0.785, not add scale_pos_weight
 
 python train.py --tag rf_v1 --model RFClassifier     
 python train.py --tag rf_v2 --model RFClassifier     @REM offline 0.7463, with max_leaf_nodes=127
@@ -68,8 +68,45 @@ python train.py --tag et_v2 --model ETClassifier     @REM offline bad
 python train.py --tag xgb_v1 --model XGB_Classifier ^
 	--learning_rate        0.01 ^
 	--min_child_weight     10 ^
-	--early_stopping_round 100
+	--early_stopping_round 100                       @REM both lb and offline 0.780
 
 
-python train.py --model CBClassifier --tag cb_v1 
+python train.py --model CBClassifier --tag cb_v1     @REM first offline 0.783
 python train.py --model CBClassifier --tag cb_v2
+
+
+python train.py --tag      good_v3_p3 ^
+	--max_depth            8 ^
+	--num_leaves           127 ^
+	--n_estimators         5000 ^
+	--lr_rate              0.1 ^
+	--early_stopping_round 100 ^
+	--scale_pos_weight     5
+
+python train.py --tag      good_v3_p4 ^
+	--max_depth            8 ^
+	--num_leaves           127 ^
+	--n_estimators         5000 ^
+	--lr_rate              0.03 ^
+	--early_stopping_round 100 ^
+	--scale_pos_weight     5 ^
+	--min_child_weight     8
+
+@REM stopped, as it get worth
+python train.py --tag      good_v3_p5 ^
+	--max_depth            9 ^
+	--num_leaves           255 ^
+	--n_estimators         5000 ^
+	--lr_rate              0.03 ^
+	--early_stopping_round 100 ^
+	--scale_pos_weight     5 ^
+	--min_child_weight     10
+
+python train.py --tag      good_v3_p5 ^
+	--max_depth            8 ^
+	--num_leaves           127 ^
+	--n_estimators         5000 ^
+	--lr_rate              0.1 ^
+	--early_stopping_round 100 ^
+	--scale_pos_weight     5 ^
+	--min_child_weight     10

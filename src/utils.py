@@ -5,23 +5,11 @@
 # @Last Modified time: 2018-05-25 11:15:20
 
 
-import gc
-import os.path as op
-import numpy as np
 import feather
 import pandas as pd
-import fire
 import time
-import models
-from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score
-from datetime import datetime
+import os.path as op
 from contextlib import contextmanager
-
-
-NA_NEG_VALUE = -9999999
-NA_POS_VALUE = 365243
-NA_STRING    = 'XNA'
 
 
 def cache_read(csv_file, cache_suffix=".feather", **kwargs):
@@ -38,21 +26,24 @@ def cache_read(csv_file, cache_suffix=".feather", **kwargs):
     return data
 
 
-def load_useless_feat(filepath):
+def load_feat(filepath):
     """
-    加载后续通过模型筛选出的无用特征
+    加载特征list文件
     """
-    unused_feat = set()
-    with open(filepath, 'r') as f:
-        for line in f:
+    feat_list = []
+    with open(filepath, 'r') as f_gen:
+        for line in f_gen:
             line = line.strip()
             if line == "" or line.startswith("#"):
                 continue
-            unused_feat.add(line)
-    return unused_feat
+            feat_list.append(line)
+    return feat_list
 
 
 def add_columns_tag(df, prefix, keep=['SK_ID_CURR']):
+    """
+    对pd.DataFrame的列名添加prefix, keep list里面保持列名不变.
+    """
 
     cols = df.columns.tolist()
     cols = [f_ if f_ in keep else prefix + f_ for f_ in cols]
@@ -84,8 +75,8 @@ def add_df_column(df, grp, select, fun=None, new_column=None,
         if fun == 'cumcount':
             if reverse_order:
                 df[new_column] = df[
-                    grp + [select]].iloc[::-1, :].groupby(
-                        grp)[select].agg(fun).astype(new_dtype)
+                                     grp + [select]].iloc[::-1, :].groupby(
+                    grp)[select].agg(fun).astype(new_dtype)
             else:
                 df[new_column] = df[grp + [select]].groupby(
                     grp)[select].agg(fun).astype(new_dtype)
@@ -93,14 +84,13 @@ def add_df_column(df, grp, select, fun=None, new_column=None,
             df = df.merge(
                 df[grp + [select]].groupby(
                     grp)[select].agg(fun).astype(
-                        new_dtype).reset_index().rename(
-                            columns={select: new_column}), how='left')
+                    new_dtype).reset_index().rename(
+                    columns={select: new_column}), how='left')
     return df
 
 
 def get_group_stat(df, grp, select, fun=None,
                    new_column=None, new_dtype='uint16'):
-
     if fun is None:
         fun = 'count'
 
@@ -114,7 +104,7 @@ def get_group_stat(df, grp, select, fun=None,
     # not support cumcout
     with timer("Stating {}".format(new_column)):
         stat_df = df[grp + [select]].groupby(
-            grp)[select].agg(fun).astype(new_dtype).\
+            grp)[select].agg(fun).astype(new_dtype). \
             reset_index().rename(columns={select: new_column})
         return stat_df
 
@@ -136,26 +126,18 @@ def pivot_stat_single(df, index, column, fill_value=None):
 
 
 def exclude_column_df(df, exclude_set):
-    cols = [f for f in df.columns if f not in exclude_set]
-    return df[cols]
+    """
+    删除在排除集合中的列
+    """
+    cols = [f for f in df.columns if f in exclude_set]
+    df.drop(cols, axis=1, inplace=True)
 
 
 def dummy_replace(data, c, **kwargs):
+    """
+    将category列进行dummy化，进行one-hot encoding.
+    """
     df = pd.get_dummies(data[c], prefix=c, **kwargs)
     data.drop(c, axis=1, inplace=True)
     data = pd.concat([data, df], axis=1)
     return data
-
-
-def add_prefix(prefix, list, sep='_'):
-    return [prefix + sep + e for e in list]
-
-
-def fill_na(df, c):
-    if df[c].dtype == 'object':
-        df[c].fillna(NA_STRING, inplace=True)
-    else:
-        if 'DAYS' in c:
-            df[c].fillna(NA_POS_VALUE, inplace=True)
-        else:
-            df[c].fillna(NA_NEG_VALUE, inplace=True)
